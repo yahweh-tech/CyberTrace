@@ -3,7 +3,7 @@ services:
     name: cybertrace
     runtime: python
     buildCommand: "./build.sh"
-    startCommand: "gunicorn project.wsgi:application"
+    startCommand: "sh ./start.sh"
     envVars:
       - key: PYTHON_VERSION
         value: 3.12.8
@@ -15,3 +15,7 @@ services:
         value: "*"
       - key: CSRF_TRUSTED_ORIGINS
         value: "https://*.onrender.com"
+      - key: ADMIN_USERNAME
+        value: "admin"
+      - key: ADMIN_PASSWORD
+        value: "CyberTrace2026!"
