@@ -1,0 +1,37 @@
+{% extends "base.html" %}
+
+{% block title %}Packet Analysis{% endblock %}
+
+{% block content %}
+
+<h2>Packet Capture Analysis</h2>
+
+<p>
+    Investigation:
+    <strong>{{ investigation.title }}</strong>
+</p>
+
+<p class="text-muted">
+    Upload a real packet capture (.pcap / .pcapng / .cap, e.g. from Wireshark
+    or tcpdump). It's parsed with scapy to extract protocol breakdown, top
+    talkers, ports in use, and any SIP/VoIP signalling headers found.
+</p>
+
+<form method="post" enctype="multipart/form-data">
+
+    {% csrf_token %}
+
+    {{ form.as_p }}
+
+    <button class="btn btn-primary">
+        Analyze Capture
+    </button>
+
+</form>
+
+<a href="{% url 'investigations:detail' investigation.id %}"
+   class="btn btn-secondary mt-3">
+    Back to Investigation
+</a>
+
+{% endblock %}

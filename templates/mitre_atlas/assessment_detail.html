@@ -1,0 +1,340 @@
+{% extends "base.html" %}
+
+{% block title %}ATLAS AI Security Assessment — {{ assessment.system_name }}{% endblock %}
+
+{% block extra_head %}
+<style>
+  .risk-card-hero {
+    border-radius: 16px;
+    padding: 1.75rem;
+    color: #ffffff;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.25);
+  }
+  .risk-hero-CRITICAL {
+    background: linear-gradient(135deg, #450a0a 0%, #991b1b 60%, #1f2937 100%);
+    border: 1px solid #ef4444;
+  }
+  .risk-hero-HIGH {
+    background: linear-gradient(135deg, #431407 0%, #c2410c 60%, #1f2937 100%);
+    border: 1px solid #f97316;
+  }
+  .risk-hero-MEDIUM {
+    background: linear-gradient(135deg, #361e04 0%, #b45309 60%, #1f2937 100%);
+    border: 1px solid #eab308;
+  }
+  .risk-hero-LOW {
+    background: linear-gradient(135deg, #082f49 0%, #0369a1 60%, #1f2937 100%);
+    border: 1px solid #38bdf8;
+  }
+  .tactic-chip {
+    background: #0f172a;
+    color: #e2e8f0;
+    border-radius: 8px;
+    padding: 0.5rem 0.85rem;
+    font-size: 0.8rem;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    border: 1px solid #334155;
+  }
+  .mitigation-card {
+    border-left: 4px solid #10b981;
+    background: #f0fdf4;
+    border-radius: 8px;
+    padding: 1rem;
+    margin-bottom: 0.75rem;
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="mb-3">
+  <nav aria-label="breadcrumb">
+    <ol class="breadcrumb">
+      <li class="breadcrumb-item"><a href="{% url 'investigations:list' %}">Investigations</a></li>
+      <li class="breadcrumb-item"><a href="{% url 'investigations:detail' investigation.id %}">{{ investigation.title }}</a></li>
+      <li class="breadcrumb-item active" aria-current="page">ATLAS AI Security Assessment</li>
+    </ol>
+  </nav>
+</div>
+
+<!-- Header Card / Risk Overview -->
+<div class="risk-card-hero risk-hero-{{ assessment.risk_level }} mb-4">
+  <div class="row align-items-center g-3">
+    <div class="col-lg-8">
+      <div class="d-flex align-items-center gap-2 mb-2 flex-wrap">
+        <span class="badge bg-dark font-monospace text-info border border-info">
+          <i class="bi bi-cpu me-1"></i>MITRE ATLAS™ AI ASSESSMENT
+        </span>
+        <span class="badge bg-secondary">{{ assessment.get_system_type_display }}</span>
+        <span class="small text-white-50">{{ assessment.created_at|date:"M d, Y - H:i" }} UTC</span>
+      </div>
+      <h2 class="fw-bold mb-1 text-white">{{ assessment.system_name }}</h2>
+      <p class="mb-0 text-light opacity-75 small">
+        Evaluated within investigation <strong>"{{ investigation.title }}"</strong>.
+        Adversarial AI assessment mapped across the MITRE ATLAS matrix.
+      </p>
+    </div>
+    <div class="col-lg-4 text-lg-end">
+      <div class="p-3 bg-dark bg-opacity-50 rounded-3 border border-light border-opacity-25 d-inline-block text-center" style="min-width: 180px;">
+        <span class="text-uppercase small tracking-wide text-white-50 d-block">ATLAS Risk Level</span>
+        <h2 class="fw-bold mb-0 text-white">{{ assessment.get_risk_level_display }}</h2>
+        <div class="mt-2">
+          <div class="progress" style="height: 6px;">
+            <div class="progress-bar {% if assessment.risk_level == 'CRITICAL' %}bg-danger{% elif assessment.risk_level == 'HIGH' %}bg-warning{% elif assessment.risk_level == 'MEDIUM' %}bg-info{% else %}bg-success{% endif %}"
+                 style="width: {{ assessment.risk_score }}%;">
+            </div>
+          </div>
+          <small class="text-white-50 mt-1 d-block font-monospace">Score: {{ assessment.risk_score }}/100</small>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Quick Actions & Stats -->
+<div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
+  <div class="d-flex gap-2 align-items-center">
+    <span class="badge bg-primary fs-6">{{ mapped_techniques.count }} Mapped Techniques</span>
+    <span class="badge bg-dark fs-6">{{ affected_tactics|length }} Adversary Tactics</span>
+  </div>
+  <div class="d-flex gap-2">
+    <a href="{% url 'mitre_atlas:matrix' %}" class="btn btn-outline-info btn-sm">
+      <i class="bi bi-grid-3x3 me-1"></i>Global ATLAS Matrix
+    </a>
+    <a href="{% url 'mitre_atlas:assessment_create' investigation.id %}" class="btn btn-outline-primary btn-sm">
+      <i class="bi bi-plus-circle me-1"></i>New Assessment
+    </a>
+    <a href="{% url 'reports:export_csv' investigation.id %}" class="btn btn-success btn-sm">
+      <i class="bi bi-download me-1"></i>Export CSV Report
+    </a>
+  </div>
+</div>
+
+<!-- Affected Tactics Kill Chain -->
+<div class="card shadow-sm border-0 mb-4">
+  <div class="card-header bg-white py-3">
+    <h5 class="fw-bold mb-0 text-dark">
+      <i class="bi bi-diagram-3-fill text-primary me-2"></i>Traversed ATLAS Kill Chain Tactics
+    </h5>
+  </div>
+  <div class="card-body">
+    <div class="d-flex flex-wrap gap-2">
+      {% for item in affected_tactics %}
+      <div class="tactic-chip">
+        <i class="bi {{ item.tactic.icon }} text-info"></i>
+        <span><strong>{{ item.tactic.code }}</strong>: {{ item.tactic.name }}</span>
+        <span class="badge bg-primary ms-1">{{ item.techniques|length }}</span>
+      </div>
+      {% empty %}
+      <span class="text-muted small">No tactics mapped yet.</span>
+      {% endfor %}
+    </div>
+  </div>
+</div>
+
+<!-- Correlated Case Infrastructure (IP, Domain, Packet & VoIP Forensics) -->
+{% if ip_lookups or domain_lookups or packet_analyses or number_lookups %}
+<div class="card shadow-sm border-0 mb-4" style="border-left: 4px solid #0284c7 !important;">
+  <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center">
+    <h5 class="fw-bold mb-0 text-dark">
+      <i class="bi bi-diagram-3 text-primary me-2"></i>Correlated Case Infrastructure & Network/VoIP Forensics
+    </h5>
+    <span class="badge bg-light text-primary border border-primary-subtle">Linked Investigation Artifacts</span>
+  </div>
+  <div class="card-body">
+    <div class="row g-3">
+      {% if number_lookups %}
+      <div class="col-md-3">
+        <div class="border rounded p-3 h-100 bg-light">
+          <div class="d-flex justify-content-between align-items-center mb-2">
+            <strong class="text-dark"><i class="bi bi-telephone text-success me-1"></i>VoIP & Phone</strong>
+            <a href="{% url 'number_lookup:results' investigation.id %}" class="btn btn-outline-success btn-sm py-0 px-2" style="font-size:0.75rem;">View Results</a>
+          </div>
+          {% for num in number_lookups %}
+          <div class="mb-2 pb-2 border-bottom small">
+            <div class="font-monospace fw-bold text-dark">{{ num.phone_number }}</div>
+            <div class="text-muted">{{ num.carrier|default:num.provider|default:"Unknown" }} &bull; {{ num.line_type }}</div>
+            {% if num.is_virtual %}
+              <span class="badge bg-danger mt-1" style="font-size:0.65rem;">Virtual VoIP DID</span>
+            {% endif %}
+          </div>
+          {% endfor %}
+        </div>
+      </div>
+      {% endif %}
+
+      {% if packet_analyses %}
+      <div class="col-md-3">
+        <div class="border rounded p-3 h-100 bg-light">
+          <div class="d-flex justify-content-between align-items-center mb-2">
+            <strong class="text-dark"><i class="bi bi-reception-4 text-primary me-1"></i>SIP & PCAP Packets</strong>
+            <a href="{% url 'packet_analysis:results' investigation.id %}" class="btn btn-outline-primary btn-sm py-0 px-2" style="font-size:0.75rem;">View Results</a>
+          </div>
+          {% for pa in packet_analyses %}
+          <div class="mb-2 pb-2 border-bottom small">
+            <div class="fw-bold">{{ pa.source_label|default:"PCAP Analysis" }}</div>
+            <div class="text-muted">{{ pa.packet_count }} packets &bull; Ports: {{ pa.open_ports|default:"N/A" }}</div>
+            {% if pa.sip_method %}
+              <span class="badge bg-info text-dark mt-1" style="font-size:0.65rem;">SIP {{ pa.sip_method }}</span>
+            {% endif %}
+            {% if pa.user_agent %}
+              <div class="text-truncate text-secondary" style="font-size:0.72rem;">UA: {{ pa.user_agent }}</div>
+            {% endif %}
+          </div>
+          {% endfor %}
+        </div>
+      </div>
+      {% endif %}
+
+      {% if ip_lookups %}
+      <div class="col-md-3">
+        <div class="border rounded p-3 h-100 bg-light">
+          <div class="d-flex justify-content-between align-items-center mb-2">
+            <strong class="text-dark"><i class="bi bi-globe text-primary me-1"></i>IP Intelligence</strong>
+            <a href="{% url 'ip_lookup:results' investigation.id %}" class="btn btn-outline-primary btn-sm py-0 px-2" style="font-size:0.75rem;">View Results</a>
+          </div>
+          {% for ip in ip_lookups %}
+          <div class="mb-2 pb-2 border-bottom small">
+            <div class="font-monospace fw-bold">{{ ip.ip_address }}</div>
+            <div class="text-muted">{{ ip.city }}, {{ ip.country }} &bull; {{ ip.isp|default:"N/A" }}</div>
+            {% if ip.is_proxy %}
+              <span class="badge bg-warning text-dark mt-1" style="font-size:0.65rem;">Proxy / VPN</span>
+            {% endif %}
+          </div>
+          {% endfor %}
+        </div>
+      </div>
+      {% endif %}
+
+      {% if domain_lookups %}
+      <div class="col-md-3">
+        <div class="border rounded p-3 h-100 bg-light">
+          <div class="d-flex justify-content-between align-items-center mb-2">
+            <strong class="text-dark"><i class="bi bi-browser-chrome text-primary me-1"></i>Domain Intelligence</strong>
+            <a href="{% url 'domain_lookup:results' investigation.id %}" class="btn btn-outline-primary btn-sm py-0 px-2" style="font-size:0.75rem;">View Results</a>
+          </div>
+          {% for dom in domain_lookups %}
+          <div class="mb-2 pb-2 border-bottom small">
+            <div class="font-monospace fw-bold">{{ dom.domain }}</div>
+            <div class="text-muted">Registrar: {{ dom.registrar|default:"Unknown" }}</div>
+            <div class="text-muted" style="font-size:0.75rem;">Created: {{ dom.creation_date|default:"Unknown" }}</div>
+          </div>
+          {% endfor %}
+        </div>
+      </div>
+      {% endif %}
+    </div>
+  </div>
+</div>
+{% endif %}
+
+{% if assessment.incident_payload %}
+<!-- Analyzed Incident Payload -->
+<div class="card shadow-sm border-0 mb-4">
+  <div class="card-header bg-dark text-white py-2 d-flex justify-content-between align-items-center">
+    <span class="small fw-semibold"><i class="bi bi-terminal me-2 text-info"></i>Evaluated Attack Prompt / Incident Payload</span>
+    <span class="badge bg-secondary font-monospace" style="font-size:0.7rem;">Heuristic Audited</span>
+  </div>
+  <div class="card-body bg-light p-3">
+    <pre class="mb-0 font-monospace text-dark small" style="white-space: pre-wrap;">{{ assessment.incident_payload }}</pre>
+  </div>
+</div>
+{% endif %}
+
+<!-- Identified Techniques Table -->
+<div class="card shadow-sm border-0 mb-4">
+  <div class="card-header bg-white py-3">
+    <h5 class="fw-bold mb-0 text-dark">
+      <i class="bi bi-shield-slash-fill text-danger me-2"></i>Identified Adversary Techniques
+    </h5>
+  </div>
+  <div class="table-responsive">
+    <table class="table table-hover align-middle mb-0">
+      <thead class="table-light">
+        <tr>
+          <th>ATLAS Code</th>
+          <th>Technique Name</th>
+          <th>Tactic</th>
+          <th>Severity</th>
+          <th>Status</th>
+          <th>Evidence / Notes</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for mt in mapped_techniques %}
+        <tr>
+          <td class="font-monospace fw-bold text-primary">
+            {{ mt.technique.code }}
+          </td>
+          <td>
+            <div class="fw-semibold text-dark">{{ mt.technique.name }}</div>
+            <small class="text-muted">{{ mt.technique.attack_surface }}</small>
+          </td>
+          <td>
+            <span class="badge bg-secondary">{{ mt.technique.tactic.name }}</span>
+          </td>
+          <td>
+            {% if mt.technique.severity == 'CRITICAL' %}
+              <span class="badge bg-danger">Critical</span>
+            {% elif mt.technique.severity == 'HIGH' %}
+              <span class="badge bg-warning text-dark">High</span>
+            {% elif mt.technique.severity == 'MEDIUM' %}
+              <span class="badge bg-info text-dark">Medium</span>
+            {% else %}
+              <span class="badge bg-secondary">Low</span>
+            {% endif %}
+          </td>
+          <td>
+            {% if mt.status == 'EXPLOITED' %}
+              <span class="badge bg-danger-subtle text-danger border border-danger">Confirmed Exploited</span>
+            {% elif mt.status == 'SUSPECTED' %}
+              <span class="badge bg-warning-subtle text-warning-emphasis border border-warning">Suspected</span>
+            {% elif mt.status == 'POTENTIAL' %}
+              <span class="badge bg-info-subtle text-info-emphasis border border-info">Potential</span>
+            {% else %}
+              <span class="badge bg-success-subtle text-success border border-success">Mitigated</span>
+            {% endif %}
+          </td>
+          <td class="small text-muted">
+            {{ mt.evidence_notes|default:"—" }}
+          </td>
+        </tr>
+        {% empty %}
+        <tr>
+          <td colspan="6" class="text-center text-muted p-4">No techniques mapped to this assessment.</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- Recommended MITRE ATLAS Mitigations Roadmap -->
+<div class="card shadow-sm border-0 mb-4">
+  <div class="card-header bg-white py-3">
+    <h5 class="fw-bold mb-0 text-success">
+      <i class="bi bi-shield-check me-2"></i>MITRE ATLAS™ Recommended Defense & Hardening Roadmap
+    </h5>
+    <small class="text-muted">Targeted security controls aligned with the techniques identified in this assessment.</small>
+  </div>
+  <div class="card-body p-4">
+    {% for mt in mapped_techniques %}
+      {% if mt.technique.mitigation_guidance %}
+      <div class="mitigation-card">
+        <div class="d-flex justify-content-between align-items-center mb-1">
+          <strong class="text-dark">
+            <i class="bi bi-check2-circle text-success me-1"></i>
+            Defense against [{{ mt.technique.code }}] {{ mt.technique.name }}
+          </strong>
+          <span class="badge bg-success text-white">Recommended</span>
+        </div>
+        <p class="mb-0 text-secondary small">{{ mt.technique.mitigation_guidance }}</p>
+      </div>
+      {% endif %}
+    {% empty %}
+      <p class="text-muted mb-0 small">No specific mitigations required.</p>
+    {% endfor %}
+  </div>
+</div>
+{% endblock %}

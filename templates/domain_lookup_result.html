@@ -1,0 +1,61 @@
+{% extends "base.html" %}
+
+{% block title %}Domain Lookup Result{% endblock %}
+
+{% block content %}
+
+<h2>Domain Intelligence Result</h2>
+
+{% if lookup %}
+
+<table class="table table-bordered">
+
+    <tr>
+        <th>Domain</th>
+        <td>{{ lookup.domain }}</td>
+    </tr>
+
+    <tr>
+        <th>Registrar</th>
+        <td>{{ lookup.registrar }}</td>
+    </tr>
+
+    <tr>
+        <th>Registrant Organization</th>
+        <td>{{ lookup.registrant_org|default:"N/A" }}</td>
+    </tr>
+
+    <tr>
+        <th>Creation Date</th>
+        <td>{{ lookup.creation_date|default:"N/A" }}</td>
+    </tr>
+
+    <tr>
+        <th>Expiry Date</th>
+        <td>{{ lookup.expiry_date|default:"N/A" }}</td>
+    </tr>
+
+    <tr>
+        <th>Name Servers</th>
+        <td>{{ lookup.name_servers|default:"N/A" }}</td>
+    </tr>
+
+    <tr>
+        <th>Hosting Provider</th>
+        <td>{{ lookup.hosting_provider|default:"N/A" }}</td>
+    </tr>
+
+</table>
+
+{% else %}
+
+<p class="text-muted">No domain lookup results found.</p>
+
+{% endif %}
+
+<a href="{% url 'investigations:detail' investigation.id %}"
+   class="btn btn-secondary">
+    Back to Investigation
+</a>
+
+{% endblock %}

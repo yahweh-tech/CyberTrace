@@ -1,0 +1,23 @@
+{% extends "base.html" %}
+
+{% block title %}
+New Investigation
+{% endblock %}
+
+{% block content %}
+
+<h2>Create Investigation</h2>
+
+<form method="post">
+
+    {% csrf_token %}
+
+    {{ form.as_p }}
+
+    <button class="btn btn-primary">
+        Create Investigation
+    </button>
+
+</form>
+
+{% endblock %}

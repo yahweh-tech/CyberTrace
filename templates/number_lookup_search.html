@@ -1,0 +1,26 @@
+{% extends "base.html" %}
+
+{% block title %}Number Lookup{% endblock %}
+
+{% block content %}
+
+<h2>Number Lookup</h2>
+
+<p>
+    Investigation:
+    <strong>{{ investigation.title }}</strong>
+</p>
+
+<form method="post">
+
+    {% csrf_token %}
+
+    {{ form.as_p }}
+
+    <button class="btn btn-primary">
+        Search
+    </button>
+
+</form>
+
+{% endblock %}

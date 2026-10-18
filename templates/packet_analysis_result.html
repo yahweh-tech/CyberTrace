@@ -1,0 +1,113 @@
+{% extends "base.html" %}
+
+{% block title %}Packet Analysis Result{% endblock %}
+
+{% block content %}
+
+<h2>Packet Capture Analysis Result</h2>
+
+{% if analysis %}
+
+<table class="table table-bordered">
+
+    <tr>
+        <th>Source</th>
+        <td>{{ analysis.source_label|default:"N/A" }}</td>
+    </tr>
+
+    <tr>
+        <th>Packet Count</th>
+        <td>{{ analysis.packet_count }}</td>
+    </tr>
+
+    <tr>
+        <th>Protocol Breakdown</th>
+        <td>{{ analysis.protocol_summary|default:"N/A" }}</td>
+    </tr>
+
+    <tr>
+        <th>Top IPs (packet count)</th>
+        <td>{{ analysis.unique_ips|default:"N/A" }}</td>
+    </tr>
+
+    <tr>
+        <th>Ports Observed</th>
+        <td>{{ analysis.open_ports|default:"N/A" }}</td>
+    </tr>
+
+    <tr>
+        <th>Suspicious Findings</th>
+        <td>
+            {% if "None detected" in analysis.suspicious_flags %}
+                <span class="badge bg-success">{{ analysis.suspicious_flags }}</span>
+            {% else %}
+                <span class="badge bg-warning text-dark">{{ analysis.suspicious_flags }}</span>
+            {% endif %}
+        </td>
+    </tr>
+
+</table>
+
+{% if analysis.call_id or analysis.sip_method %}
+
+<h4>VoIP / SIP Signalling Detected</h4>
+
+<table class="table table-bordered">
+
+    <tr>
+        <th>SIP Method</th>
+        <td>{{ analysis.sip_method|default:"N/A" }}</td>
+    </tr>
+
+    <tr>
+        <th>Call-ID</th>
+        <td>{{ analysis.call_id|default:"N/A" }}</td>
+    </tr>
+
+    <tr>
+        <th>From</th>
+        <td>{{ analysis.from_uri|default:"N/A" }}</td>
+    </tr>
+
+    <tr>
+        <th>To</th>
+        <td>{{ analysis.to_uri|default:"N/A" }}</td>
+    </tr>
+
+    <tr>
+        <th>User-Agent</th>
+        <td>{{ analysis.user_agent|default:"N/A" }}</td>
+    </tr>
+
+    <tr>
+        <th>Via</th>
+        <td>{{ analysis.via_header|default:"N/A" }}</td>
+    </tr>
+
+    <tr>
+        <th>Contact</th>
+        <td>{{ analysis.contact|default:"N/A" }}</td>
+    </tr>
+
+</table>
+
+{% endif %}
+
+{% if analysis.pcap_file %}
+<a href="{{ analysis.pcap_file.url }}" class="btn btn-outline-secondary mb-3" download>
+    Download Original Capture
+</a>
+{% endif %}
+
+{% else %}
+
+<p class="text-muted">No packet analysis results found.</p>
+
+{% endif %}
+
+<a href="{% url 'investigations:detail' investigation.id %}"
+   class="btn btn-secondary">
+    Back to Investigation
+</a>
+
+{% endblock %}

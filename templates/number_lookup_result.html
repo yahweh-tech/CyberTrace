@@ -1,0 +1,62 @@
+{% extends "base.html" %}
+
+{% block title %}Lookup Result{% endblock %}
+
+{% block content %}
+
+<h2>Phone Intelligence Result</h2>
+
+{% if lookup %}
+
+<table class="table table-bordered">
+
+    <tr>
+        <th>Phone Number</th>
+        <td>{{ lookup.phone_number }}</td>
+    </tr>
+
+    <tr>
+        <th>Country</th>
+        <td>{{ lookup.country }}</td>
+    </tr>
+
+    <tr>
+        <th>Carrier</th>
+        <td>{{ lookup.carrier }}</td>
+    </tr>
+
+    <tr>
+        <th>Line Type</th>
+        <td>{{ lookup.line_type }}</td>
+    </tr>
+
+    <tr>
+        <th>Provider</th>
+        <td>{{ lookup.provider }}</td>
+    </tr>
+
+    <tr>
+        <th>Virtual/VoIP Number</th>
+        <td>
+            {% if lookup.is_virtual %}
+                <span class="badge bg-warning text-dark">Yes</span>
+            {% else %}
+                <span class="badge bg-success">No</span>
+            {% endif %}
+        </td>
+    </tr>
+
+</table>
+
+{% else %}
+
+<p class="text-muted">No phone lookup results found.</p>
+
+{% endif %}
+
+<a href="{% url 'investigations:list' %}"
+   class="btn btn-secondary">
+    Back
+</a>
+
+{% endblock %}

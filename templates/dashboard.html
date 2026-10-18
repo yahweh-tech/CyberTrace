@@ -1,0 +1,234 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard{% endblock %}
+
+{% block content %}
+
+<div class="card border-0 text-white mb-4 shadow-sm" style="background: linear-gradient(135deg, #0b1120 0%, #1e293b 50%, #0f172a 100%); border-radius: 16px; border: 1px solid rgba(56, 189, 248, 0.2) !important;">
+    <div class="card-body p-4">
+        <div class="d-flex justify-content-between align-items-center flex-wrap gap-3">
+            <div>
+                <div class="d-flex align-items-center gap-2 mb-2 flex-wrap">
+                    <span class="badge font-monospace" style="background: rgba(56, 189, 248, 0.15); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3);">
+                        <i class="bi bi-shield-check me-1"></i>VoIP & AI Threat Intelligence
+                    </span>
+                    <span class="text-white-50 small">Forensic Attribution Platform</span>
+                </div>
+                <h3 class="fw-bold text-white mb-1">VoIP CyberTrace: AI Voice Deepfakes & Vishing Attribution</h3>
+                <p class="text-light opacity-75 small mb-3" style="max-width: 850px;">
+                    Full-stack cyber investigation platform for tracing AI-enabled voice threats across telecom trunks, SIP signaling packets, infrastructure proxy networks, and standardized MITRE ATLAS™ threat taxonomies.
+                </p>
+                <div class="d-flex gap-2 flex-wrap" style="font-size: 0.78rem;">
+                    <span class="badge bg-dark border border-secondary text-info"><i class="bi bi-telephone me-1"></i>1. VoIP & Phone Intel</span>
+                    <span class="badge bg-dark border border-secondary text-primary"><i class="bi bi-reception-4 me-1"></i>2. SIP/RTP Packet Forensics</span>
+                    <span class="badge bg-dark border border-secondary text-warning"><i class="bi bi-globe me-1"></i>3. IP & C2 Infrastructure</span>
+                    <span class="badge bg-dark border border-secondary text-success"><i class="bi bi-cpu me-1"></i>4. MITRE ATLAS™ AI Defense</span>
+                </div>
+            </div>
+            <div>
+                <a href="{% url 'investigations:create' %}" class="btn btn-primary fw-semibold px-3 py-2 shadow-sm">
+                    <i class="bi bi-plus-circle me-1"></i>New Investigation
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row g-4">
+
+    <div class="col-md-3">
+
+        <div class="card">
+
+            <div class="card-body">
+
+                <h6 class="text-muted">
+                    Total Investigations
+                </h6>
+
+                <h2>{{ total_investigations }}</h2>
+
+            </div>
+
+        </div>
+
+    </div>
+
+    <div class="col-md-3">
+
+        <div class="card">
+
+            <div class="card-body">
+
+                <h6 class="text-muted">
+                    Pending
+                </h6>
+
+                <h2>{{ pending }}</h2>
+
+            </div>
+
+        </div>
+
+    </div>
+
+    <div class="col-md-3">
+
+        <div class="card">
+
+            <div class="card-body">
+
+                <h6 class="text-muted">
+                    In Progress
+                </h6>
+
+                <h2>{{ in_progress }}</h2>
+
+            </div>
+
+        </div>
+
+    </div>
+
+    <div class="col-md-3">
+
+        <div class="card">
+
+            <div class="card-body">
+
+                <h6 class="text-muted">
+                    Completed
+                </h6>
+
+                <h2>{{ completed }}</h2>
+
+            </div>
+
+        </div>
+
+    </div>
+
+</div>
+
+<div class="card mt-5">
+
+    <div class="card-header d-flex justify-content-between align-items-center">
+
+        <h5 class="mb-0">
+
+            Recent Investigations
+
+        </h5>
+
+        <a href="{% url 'investigations:list' %}">
+
+            View All
+
+        </a>
+
+    </div>
+
+    <div class="card-body p-0">
+
+        <table class="table table-hover mb-0">
+
+            <thead>
+
+                <tr>
+
+                    <th>Title</th>
+
+                    <th>Status</th>
+
+                    <th>Created</th>
+
+                    <th></th>
+
+                </tr>
+
+            </thead>
+
+            <tbody>
+
+            {% for investigation in recent_investigations %}
+
+                <tr>
+
+                    <td>
+
+                        {{ investigation.title }}
+
+                    </td>
+
+                    <td>
+
+                        {% if investigation.status == "PENDING" %}
+
+                            <span class="badge bg-warning">
+
+                                Pending
+
+                            </span>
+
+                        {% elif investigation.status == "IN_PROGRESS" %}
+
+                            <span class="badge bg-primary">
+
+                                In Progress
+
+                            </span>
+
+                        {% else %}
+
+                            <span class="badge bg-success">
+
+                                Completed
+
+                            </span>
+
+                        {% endif %}
+
+                    </td>
+
+                    <td>
+
+                        {{ investigation.created_at|date:"d M Y" }}
+
+                    </td>
+
+                    <td>
+
+                        <a href="{% url 'investigations:detail' investigation.id %}"
+                           class="btn btn-sm btn-outline-primary">
+
+                            Open
+
+                        </a>
+
+                    </td>
+
+                </tr>
+
+            {% empty %}
+
+                <tr>
+
+                    <td colspan="4" class="text-center">
+
+                        No investigations yet.
+
+                    </td>
+
+                </tr>
+
+            {% endfor %}
+
+            </tbody>
+
+        </table>
+
+    </div>
+
+</div>
+
+{% endblock %}

@@ -1,0 +1,31 @@
+{% extends "base.html" %}
+
+{% block title %}Domain Lookup{% endblock %}
+
+{% block content %}
+
+<h2>Domain Intelligence Lookup</h2>
+
+<p>
+    Investigation:
+    <strong>{{ investigation.title }}</strong>
+</p>
+
+<form method="post">
+
+    {% csrf_token %}
+
+    {{ form.as_p }}
+
+    <button class="btn btn-primary">
+        Lookup Domain
+    </button>
+
+</form>
+
+<a href="{% url 'investigations:detail' investigation.id %}"
+   class="btn btn-secondary mt-3">
+    Back to Investigation
+</a>
+
+{% endblock %}

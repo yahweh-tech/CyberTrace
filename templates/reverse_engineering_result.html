@@ -1,0 +1,411 @@
+{% extends "base.html" %}
+
+{% block title %}Binary Reverse Engineering Result - {{ analysis.file_name }}{% endblock %}
+
+{% block content %}
+
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <div>
+        <div class="d-flex align-items-center gap-2">
+            <h2 class="mb-0"><i class="bi bi-cpu-fill text-danger"></i> {{ analysis.file_name }}</h2>
+            {% if analysis.threat_level == 'CRITICAL' %}
+                <span class="badge bg-danger fs-6">CRITICAL THREAT</span>
+            {% elif analysis.threat_level == 'HIGH' %}
+                <span class="badge bg-warning text-dark fs-6">HIGH RISK</span>
+            {% elif analysis.threat_level == 'MEDIUM' %}
+                <span class="badge bg-info text-dark fs-6">MEDIUM RISK</span>
+            {% else %}
+                <span class="badge bg-success fs-6">LOW / BENIGN</span>
+            {% endif %}
+            {% if analysis.is_packed %}
+                <span class="badge bg-dark border border-warning text-warning"><i class="bi bi-box-seam me-1"></i>PACKED</span>
+            {% endif %}
+        </div>
+        <p class="text-muted small mt-1 mb-0">
+            Investigation: <strong>{{ investigation.title }}</strong> &bull; Triage completed at {{ analysis.created_at|date:"Y-m-d H:i" }} UTC
+        </p>
+    </div>
+    <div class="d-flex gap-2">
+        <a href="{% url 'reverse_engineering:upload' investigation.id %}" class="btn btn-outline-danger btn-sm">
+            <i class="bi bi-plus-circle me-1"></i>Analyze Another
+        </a>
+        <a href="{% url 'investigations:detail' investigation.id %}" class="btn btn-secondary btn-sm">
+            <i class="bi bi-arrow-left me-1"></i>Back to Case
+        </a>
+    </div>
+</div>
+
+<hr class="mt-2 mb-4">
+
+<!-- Executive Metric Cards -->
+<div class="row g-3 mb-4">
+    <div class="col-md-3">
+        <div class="card h-100 border-0 shadow-sm">
+            <div class="card-body">
+                <div class="text-muted small fw-semibold text-uppercase">Threat Score</div>
+                <div class="d-flex align-items-baseline gap-2 mt-1">
+                    <span class="display-6 fw-bold {% if analysis.threat_score >= 70 %}text-danger{% elif analysis.threat_score >= 45 %}text-warning{% elif analysis.threat_score >= 20 %}text-info{% else %}text-success{% endif %}">
+                        {{ analysis.threat_score }}
+                    </span>
+                    <span class="text-muted">/ 100</span>
+                </div>
+                <div class="progress mt-2" style="height: 6px;">
+                    <div class="progress-bar {% if analysis.threat_score >= 70 %}bg-danger{% elif analysis.threat_score >= 45 %}bg-warning{% elif analysis.threat_score >= 20 %}bg-info{% else %}bg-success{% endif %}"
+                         role="progressbar" style="width: {{ analysis.threat_score }}%;"></div>
+                </div>
+                <div class="text-muted small mt-2">
+                    {{ analysis.suspicious_capabilities|length }} suspicious tradecraft rules matched
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-3">
+        <div class="card h-100 border-0 shadow-sm">
+            <div class="card-body">
+                <div class="text-muted small fw-semibold text-uppercase">Shannon Entropy</div>
+                <div class="d-flex align-items-baseline gap-2 mt-1">
+                    <span class="display-6 fw-bold {% if analysis.entropy > 7.1 %}text-danger{% elif analysis.entropy > 6.0 %}text-warning{% else %}text-success{% endif %}">
+                        {{ analysis.entropy }}
+                    </span>
+                    <span class="text-muted">/ 8.0</span>
+                </div>
+                <div class="small mt-2">
+                    {% if analysis.is_packed %}
+                        <span class="text-danger fw-semibold"><i class="bi bi-exclamation-triangle-fill me-1"></i>{{ analysis.packer_name|default:"Packed or Encrypted" }}</span>
+                    {% else %}
+                        <span class="text-success"><i class="bi bi-check-circle me-1"></i>Normal Section Entropy</span>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-3">
+        <div class="card h-100 border-0 shadow-sm">
+            <div class="card-body">
+                <div class="text-muted small fw-semibold text-uppercase">Format & Subsystem</div>
+                <div class="fw-bold mt-1 text-truncate" title="{{ analysis.file_type }}">{{ analysis.file_type }}</div>
+                <div class="text-muted small mt-1">
+                    <strong>Arch:</strong> {{ analysis.architecture }}<br>
+                    <strong>Subsystem:</strong> {{ analysis.subsystem }}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-3">
+        <div class="card h-100 border-0 shadow-sm">
+            <div class="card-body">
+                <div class="text-muted small fw-semibold text-uppercase">Execution Metadata</div>
+                <div class="text-muted small mt-2">
+                    <div><strong>Entry Point:</strong> <code>{{ analysis.entry_point }}</code></div>
+                    <div><strong>Image Base:</strong> <code>{{ analysis.image_base }}</code></div>
+                    <div><strong>Compile Time:</strong> {{ analysis.compile_time|truncatechars:20 }}</div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Cryptographic Fingerprints Table -->
+<div class="card shadow-sm border-0 mb-4">
+    <div class="card-header bg-light d-flex justify-content-between align-items-center py-2">
+        <span class="fw-semibold small"><i class="bi bi-fingerprint me-1"></i>Cryptographic Fingerprints & Hashes</span>
+        <span class="badge bg-secondary">{{ analysis.file_size }} bytes</span>
+    </div>
+    <div class="table-responsive">
+        <table class="table table-sm table-bordered mb-0 small">
+            <tbody>
+                <tr>
+                    <th class="bg-light" style="width: 120px;">SHA-256</th>
+                    <td><code class="user-select-all text-dark">{{ analysis.sha256 }}</code></td>
+                </tr>
+                <tr>
+                    <th class="bg-light">MD5</th>
+                    <td><code class="user-select-all text-dark">{{ analysis.md5 }}</code></td>
+                </tr>
+                {% if analysis.imphash %}
+                <tr>
+                    <th class="bg-light">Imphash</th>
+                    <td>
+                        <code class="user-select-all text-primary">{{ analysis.imphash }}</code>
+                        <span class="text-muted ms-2">(Import Hash for clustering malware families)</span>
+                    </td>
+                </tr>
+                {% endif %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- Actionable Network IOC Pivot Hub -->
+{% if analysis.extracted_iocs.ips or analysis.extracted_iocs.domains or analysis.extracted_iocs.urls %}
+<div class="card border-danger border-opacity-50 shadow-sm mb-4">
+    <div class="card-header bg-danger bg-opacity-10 text-danger-emphasis d-flex justify-content-between align-items-center">
+        <span class="fw-bold"><i class="bi bi-broadcast-pin me-1"></i>Actionable Network IOCs Extracted from Binary</span>
+        <span class="badge bg-danger">Direct Pivot Available</span>
+    </div>
+    <div class="card-body">
+        <p class="small text-muted mb-3">
+            The following external C2 endpoints and infrastructure were hardcoded inside the binary strings. Click to trace immediately with CyberTrace modules:
+        </p>
+        <div class="row g-3">
+            {% if analysis.extracted_iocs.ips %}
+            <div class="col-md-6">
+                <div class="border rounded p-3 bg-light h-100">
+                    <h6 class="fw-bold text-dark mb-2"><i class="bi bi-geo-alt-fill text-primary me-1"></i>Extracted IP Addresses</h6>
+                    <div class="d-flex flex-wrap gap-2">
+                        {% for ip in analysis.extracted_iocs.ips %}
+                        <div class="btn-group btn-group-sm">
+                            <span class="btn btn-outline-secondary disabled font-monospace">{{ ip }}</span>
+                            <a href="{% url 'ip_lookup:search' investigation.id %}?ip={{ ip }}" class="btn btn-primary" title="Trace IP in CyberTrace">
+                                <i class="bi bi-search me-1"></i>Trace IP
+                            </a>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+
+            {% if analysis.extracted_iocs.domains %}
+            <div class="col-md-6">
+                <div class="border rounded p-3 bg-light h-100">
+                    <h6 class="fw-bold text-dark mb-2"><i class="bi bi-globe2 text-success me-1"></i>Extracted C2 Domains</h6>
+                    <div class="d-flex flex-wrap gap-2">
+                        {% for dom in analysis.extracted_iocs.domains %}
+                        <div class="btn-group btn-group-sm">
+                            <span class="btn btn-outline-secondary disabled font-monospace">{{ dom }}</span>
+                            <a href="{% url 'domain_lookup:search' investigation.id %}?domain={{ dom }}" class="btn btn-success" title="Lookup Domain in CyberTrace">
+                                <i class="bi bi-search me-1"></i>Lookup Domain
+                            </a>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+
+        {% if analysis.extracted_iocs.urls %}
+        <div class="mt-3">
+            <h6 class="small fw-bold text-dark mb-1">Embedded URLs / Drop Links:</h6>
+            <div class="bg-dark text-light p-2 rounded small font-monospace" style="max-height: 120px; overflow-y: auto;">
+                {% for url in analysis.extracted_iocs.urls %}
+                    <div class="text-warning text-break">&bull; {{ url }}</div>
+                {% endfor %}
+            </div>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endif %}
+
+<!-- Tabs Navigation -->
+<ul class="nav nav-tabs mb-3" id="analysisTabs" role="tablist">
+    <li class="nav-item" role="presentation">
+        <button class="nav-link active fw-semibold" id="capabilities-tab" data-bs-toggle="tab" data-bs-target="#capabilities" type="button" role="tab">
+            <i class="bi bi-shield-slash-fill text-danger me-1"></i>Threat Capabilities ({{ analysis.suspicious_capabilities|length }})
+        </button>
+    </li>
+    <li class="nav-item" role="presentation">
+        <button class="nav-link fw-semibold" id="sections-tab" data-bs-toggle="tab" data-bs-target="#sections" type="button" role="tab">
+            <i class="bi bi-layers-fill text-primary me-1"></i>PE Sections & Entropy ({{ analysis.sections_data|length }})
+        </button>
+    </li>
+    <li class="nav-item" role="presentation">
+        <button class="nav-link fw-semibold" id="imports-tab" data-bs-toggle="tab" data-bs-target="#imports" type="button" role="tab">
+            <i class="bi bi-box-arrow-in-down-right text-info me-1"></i>Imported DLLs & APIs ({{ analysis.imports_data|length }})
+        </button>
+    </li>
+    <li class="nav-item" role="presentation">
+        <button class="nav-link fw-semibold" id="disasm-tab" data-bs-toggle="tab" data-bs-target="#disasm" type="button" role="tab">
+            <i class="bi bi-terminal-fill text-warning me-1"></i>Entry Point Disassembly
+        </button>
+    </li>
+    <li class="nav-item" role="presentation">
+        <button class="nav-link fw-semibold" id="strings-tab" data-bs-toggle="tab" data-bs-target="#strings" type="button" role="tab">
+            <i class="bi bi-card-text text-secondary me-1"></i>Extracted Strings
+        </button>
+    </li>
+</ul>
+
+<!-- Tab Contents -->
+<div class="tab-content" id="analysisTabsContent">
+    <!-- Tab 1: Capabilities & MITRE Mapping -->
+    <div class="tab-pane fade show active" id="capabilities" role="tabpanel">
+        <div class="card border-0 shadow-sm">
+            <div class="card-body">
+                <h5 class="card-title fw-bold mb-3">Detected Malicious Tradecraft & Capabilities</h5>
+                {% if analysis.suspicious_capabilities %}
+                    <div class="d-flex flex-column gap-3">
+                        {% for cap in analysis.suspicious_capabilities %}
+                        <div class="border rounded p-3 {% if cap.severity == 'CRITICAL' %}border-danger bg-danger-subtle bg-opacity-25{% elif cap.severity == 'HIGH' %}border-warning bg-warning-subtle bg-opacity-25{% else %}border-info bg-info-subtle bg-opacity-25{% endif %}">
+                            <div class="d-flex justify-content-between align-items-center mb-1">
+                                <h6 class="fw-bold mb-0 text-dark">
+                                    <i class="bi bi-exclamation-triangle-fill text-{% if cap.severity == 'CRITICAL' %}danger{% elif cap.severity == 'HIGH' %}warning{% else %}info{% endif %} me-1"></i>
+                                    {{ cap.category }}
+                                </h6>
+                                <div>
+                                    <span class="badge {% if cap.severity == 'CRITICAL' %}bg-danger{% elif cap.severity == 'HIGH' %}bg-warning text-dark{% else %}bg-info text-dark{% endif %} me-1">
+                                        {{ cap.severity }}
+                                    </span>
+                                    <span class="badge bg-dark font-monospace">MITRE {{ cap.mitre_id }}</span>
+                                </div>
+                            </div>
+                            <p class="small text-muted mb-2">{{ cap.description }}</p>
+                            <div class="d-flex flex-wrap gap-1 align-items-center">
+                                <span class="small fw-semibold me-1">Identified APIs:</span>
+                                {% for api in cap.detected_apis %}
+                                    <span class="badge bg-secondary font-monospace">{{ api }}</span>
+                                {% endfor %}
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                {% else %}
+                    <div class="alert alert-success mb-0">
+                        <i class="bi bi-shield-check me-2"></i>No high-risk Windows API patterns or common malware injection hooks were detected in the Import Table.
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Tab 2: PE Sections -->
+    <div class="tab-pane fade" id="sections" role="tabpanel">
+        <div class="card border-0 shadow-sm">
+            <div class="card-body p-0">
+                {% if analysis.sections_data %}
+                <div class="table-responsive">
+                    <table class="table table-hover table-striped mb-0 align-middle">
+                        <thead class="table-dark small">
+                            <tr>
+                                <th>Section Name</th>
+                                <th>Virtual Address</th>
+                                <th>Virtual Size</th>
+                                <th>Raw Size</th>
+                                <th>Entropy (0-8)</th>
+                                <th>Status</th>
+                            </tr>
+                        </thead>
+                        <tbody class="small font-monospace">
+                            {% for sec in analysis.sections_data %}
+                            <tr>
+                                <td class="fw-bold text-dark">{{ sec.name }}</td>
+                                <td>{{ sec.virtual_address }}</td>
+                                <td>{{ sec.virtual_size }} bytes</td>
+                                <td>{{ sec.raw_size }} bytes</td>
+                                <td>
+                                    <div class="d-flex align-items-center gap-2">
+                                        <div class="progress flex-grow-1" style="height: 6px; width: 70px;">
+                                            <div class="progress-bar {% if sec.entropy > 7.1 %}bg-danger{% elif sec.entropy > 6.0 %}bg-warning{% else %}bg-success{% endif %}"
+                                                 style="width: {% widthratio sec.entropy 8 100 %}%;"></div>
+                                        </div>
+                                        <span>{{ sec.entropy }}</span>
+                                    </div>
+                                </td>
+                                <td>
+                                    {% if sec.is_suspicious %}
+                                        <span class="badge bg-danger">High Entropy / Packed</span>
+                                    {% else %}
+                                        <span class="badge bg-success">Normal</span>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                    <div class="p-3 text-muted">No PE section data available for this file type.</div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Tab 3: Imports & DLLs -->
+    <div class="tab-pane fade" id="imports" role="tabpanel">
+        <div class="card border-0 shadow-sm">
+            <div class="card-body">
+                {% if analysis.imports_data %}
+                    <div class="accordion" id="importsAccordion">
+                        {% for imp in analysis.imports_data %}
+                        <div class="accordion-item mb-2 border rounded">
+                            <h2 class="accordion-header" id="heading{{ forloop.counter }}">
+                                <button class="accordion-button collapsed py-2" type="button" data-bs-toggle="collapse" data-bs-target="#collapse{{ forloop.counter }}">
+                                    <div class="d-flex justify-content-between align-items-center w-100 me-3">
+                                        <span class="fw-bold text-dark font-monospace">{{ imp.dll }}</span>
+                                        <span class="badge bg-secondary">{{ imp.count }} functions</span>
+                                    </div>
+                                </button>
+                            </h2>
+                            <div id="collapse{{ forloop.counter }}" class="accordion-collapse collapse" data-bs-parent="#importsAccordion">
+                                <div class="accordion-body bg-light small">
+                                    <div class="d-flex flex-wrap gap-1">
+                                        {% for fn in imp.functions %}
+                                            <span class="badge bg-white text-dark border font-monospace">{{ fn }}</span>
+                                        {% endfor %}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                {% else %}
+                    <div class="text-muted">No imported DLLs or APIs discovered in this sample.</div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Tab 4: Disassembly View -->
+    <div class="tab-pane fade" id="disasm" role="tabpanel">
+        <div class="card border-0 shadow-sm bg-dark text-light">
+            <div class="card-header bg-black text-white d-flex justify-content-between align-items-center py-2">
+                <span class="font-monospace small"><i class="bi bi-cpu me-1"></i>Entry Point Instructions (Capstone Engine)</span>
+                <span class="badge bg-secondary font-monospace">{{ analysis.entry_point }}</span>
+            </div>
+            <div class="card-body p-3" style="max-height: 480px; overflow-y: auto;">
+                {% if analysis.disassembly_data %}
+                    <div class="font-monospace small">
+                        {% for instr in analysis.disassembly_data %}
+                        <div class="d-flex gap-3 py-1 border-bottom border-secondary border-opacity-25">
+                            <span class="text-secondary" style="width: 100px;">{{ instr.address }}</span>
+                            <span class="text-muted" style="width: 140px;">{{ instr.bytes }}</span>
+                            <span class="text-info fw-bold" style="width: 80px;">{{ instr.mnemonic }}</span>
+                            <span class="text-warning">{{ instr.op_str }}</span>
+                        </div>
+                        {% endfor %}
+                    </div>
+                {% else %}
+                    <div class="text-muted small">
+                        Entry point disassembly is not applicable or could not be mapped for this binary format.
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Tab 5: Extracted Strings -->
+    <div class="tab-pane fade" id="strings" role="tabpanel">
+        <div class="card border-0 shadow-sm">
+            <div class="card-header bg-light d-flex justify-content-between align-items-center py-2">
+                <span class="small fw-semibold">Sample of Extracted ASCII & UTF-16 Strings</span>
+                <span class="badge bg-secondary">{{ analysis.top_strings|length }} strings shown</span>
+            </div>
+            <div class="card-body p-3">
+                <div class="bg-dark text-light p-3 rounded font-monospace small" style="max-height: 400px; overflow-y: auto;">
+                    {% for str_item in analysis.top_strings %}
+                        <div class="text-break py-1 border-bottom border-secondary border-opacity-10">{{ str_item }}</div>
+                    {% empty %}
+                        <div class="text-muted">No strings extracted.</div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% endblock %}
